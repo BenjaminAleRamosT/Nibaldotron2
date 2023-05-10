@@ -44,8 +44,8 @@ def load_data(path_csv = ['train.csv','test.csv']):
     for path in path_csv:
         
         data_class = np.genfromtxt(path, delimiter=',')
-        #norm = data_norm(data_class[:,:-1].T)
-        data.append(data_class[:,:-1].T)                               #datos 
+        norm = data_norm(data_class[:,:-1].T)
+        data.append(norm)                               #datos 
         label.append(binary_label(data_class[:,-1].astype(int)).T )    #labels
         
     return data,label

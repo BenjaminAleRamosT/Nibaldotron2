@@ -6,7 +6,8 @@ import prep as pr
 
 # load config param
 
-def load_config(ruta_ae='cnf_sae.csv',ruta_soft='cnf_softmax.csv'):
+
+def load_config(ruta_ae='cnf_sae.csv', ruta_soft='cnf_softmax.csv'):
 
     # cnf_sae.csv
     #  Línea 1: Parámetro P-inverse: 100
@@ -22,32 +23,32 @@ def load_config(ruta_ae='cnf_sae.csv',ruta_soft='cnf_softmax.csv'):
     #  Línea 2: Tasa Aprendizaje : 0.01
     #  Línea 3: Tamaño miniBatch : 32
 
-
     with open(ruta_ae, 'r') as archivo_csv:
 
         p_sae = [int(i) if '.' not in i else float(i)
                 for i in archivo_csv if i != '\n']
 
     with open(ruta_soft, 'r') as archivo_csv:
-    
+
         p_sft = [int(i) if '.' not in i else float(i)
                 for i in archivo_csv if i != '\n']
 
-
-    return p_sae,p_sft
+    return p_sae, p_sft
 
 # Initialize weights for SNN-SGDM
+
+
 def iniWs(inshape, layer_node):
 
     W1 = iniW(layer_node, inshape)
-    
+
     W2 = iniW(inshape, layer_node)
     W = list((W1, W2))
 
     V = []
     for i in range(len(W)):
         V.append(np.zeros(W[i].shape))
-        
+
     return W, V
 
 
@@ -63,28 +64,28 @@ def iniW(next, prev):
 
 
 def forward_ae(X, W, Param):
-    
-    #cambiar activaciones por config
+
+    # cambiar activaciones por config
     act_encoder = Param[1]
-   
+
     A = []
     z = []
     Act = []
-    
+
     # data input
     z.append(X)
     A.append(X)
-    #print(len(W))
+    # print(len(W))
     # iter por la cantidad de pesos
     for i in range(len(W)):
-        #print(W[i].shape, X.shape)
+        # print(W[i].shape, X.shape)
         X = np.dot(W[i], X)
         z.append(X)
         if i == 0:
             X = act_function(X, act=act_encoder)
-        
+
         A.append(X)
-        
+
     Act.append(A)
     Act.append(z)
 
@@ -159,47 +160,54 @@ def deriva_act(x, act=1, a_ELU=1, a_SELU=1.6732, lambd=1.0507):
 
     if act == 5:
         # pasarle la sigmoid
-        return np.multiply(act_function(x, act=5) , (1 - act_function(x, act=5)))
+        return np.multiply(act_function(x, act=5), (1 - act_function(x, act=5)))
 
     return x
 
 # Calculate Pseudo-inverse
-def pinv_ae(x , H , C):     
-    
-    A = np.dot(H,H.T) + (1/C)
-    U , S , V = np.linalg.svd(A)
-    
-    S_inv = np.diag( 1/ S )
-    
-    A_inv = np.linalg.multi_dot([V.T , S_inv , U.T])
-    
-    w2 = np.linalg.multi_dot([x , H.T , A_inv])
-    
+
+
+def pinv_ae(x, H, C):
+
+    A = np.dot(H, H.T) + (1/C)
+
+    A_inv = np.linalg.pinv(A)
+
+    # U , S , V = np.linalg.svd(A)
+
+    # S_inv = np.diag( 1/ S )
+
+    # A_inv = np.linalg.multi_dot([V.T , S_inv , U.T])
+
+    w2 = np.linalg.multi_dot([x, H.T, A_inv])
+
     return(w2)
 
 # Feed-Backward of SNN
+
+
 def gradW_ae(Act, W, Param):
     '''
     Act = lista de resultados de cada capa,
     data activada en [0] y no activada en [1]
     '''
-    
-    act_encoder = Param[1]
-    
-    L = len(Act[0])-1
-    
-    M = Param[3]
-   
-    e = Act[0][L] - Act[0][0]
-    
-    Cost = np.sum(np.sum(np.square(e), axis=0)/2)/M
-    
-    # grad decoder
-    
-    delta = e
-    #gW_l = np.dot(delta, Act[0][L-1].T)/M
 
-    #gW.append(gW_l)
+    act_encoder = Param[1]
+
+    L = len(Act[0])-1
+
+    M = Param[3]
+
+    e = Act[0][L] - Act[0][0]
+
+    Cost = np.sum(np.sum(np.square(e), axis=0)/2)/M
+
+    # grad decoder
+
+    delta = e
+    gW_l = np.dot(delta, Act[0][L-1].T)/M
+    gW = []
+    gW.append(gW_l)
 
     # grad encoder
 
@@ -207,60 +215,121 @@ def gradW_ae(Act, W, Param):
 
     t2 = deriva_act(Act[1][1], act=act_encoder)
 
-    delta = np.multiply(t1, t2)
-
     t3 = Act[0][0].T
 
-    gW = np.dot(delta, t3)/M
-    
-    #gW.append(gW_l)
+    gW_l = np.dot(np.multiply(t1, t2), t3)/M
 
-    #gW.reverse()
-    
+    gW.append(gW_l)
+    gW.reverse()
     return gW, Cost
 
 # Update W and V
 
 
-def updWV_RMSprop(W, V, gW, tasa =  0.1):
+def updWV_RMSprop(W, V, gW, tasa=0.1):
 
-    e = 10**-8
+    e = 1e-8
     beta = 0.9
-   
-    V = (beta * V) + ( (1-beta)* np.square(gW))
-    gRMS = np.multiply(1/np.sqrt(V+e),gW)
-    W = W - tasa * gRMS
+    
+    #W[1] = pr.data_norm(W[1])
+    
+    for i in range(len(W)): 
+        #W[i] = pr.data_norm(W[i])   
+        
+        V[i] = (beta * V[i]) + ((1-beta)*gW[i]**2)
+        # gRMS = np.multiply(1/np.sqrt(V+e),gW)
+    
+        W[i] = W[i] -( (tasa /np.sqrt(V[i]+e)) * gW[i])
+    
     return W, V
+
+def updWV_RMSprop2(W, V, gW, tasa=0.1):
+
+    e = 1e-8
+    beta = 0.9
+     
+    V = (beta * V) + ((1-beta)*gW**2)
+    
+    W= W -( (tasa /np.sqrt(V+e)) * gW)
+    
+    return W, V
+
+def gradW(Act, W, Param):
+    '''
+    Act = lista de resultados de cada capa,
+    data activada en [0] y no activada en [1]
+    '''
+    L = len(Act[0])-1
+    gW = []
+
+    M = Param[3]
+    
+    Cost = np.sum(np.sum(np.square(Act[0][L] - Act[0][0]), axis=0)/2)/M
+    
+    # grad salida
+    delta = np.multiply(Act[0][L] - Act[0][0], 1)
+    gW_l = np.dot(delta, Act[0][L-1].T)/M
+
+    gW.append(gW_l)
+
+    # grad capas ocultas
+
+    for l in reversed(range(1,L)):
+        
+        t1 = np.dot(W[l].T, delta)
+
+        t2 = deriva_act(Act[1][l], act=Param[1])
+
+        delta = np.multiply(t1, t2)
+
+        t3 = Act[0][l-1].T
+
+        gW_l = np.dot(delta, t3)/M
+        gW.append(gW_l)
+
+    gW.reverse()
+    return gW, Cost
 
 def updWV_sgdm(W, V, gW):
 
     tasa = 0.01
     beta = 0.8
     # print('ajuste')
+    
     for i in range(len(W)): 
         
         V[i] = (beta * V[i]) + (tasa*gW[i])
         W[i] = W[i] - V[i]
-        W[i] = pr.data_norm(W[i])
+        # W[i] = pr.data_norm(W[i])
 
     return W, V
 
+#################
+
+
+############
+
 # Softmax's gradient
-def gradW_softmax(x,y,a):
+def gradW_softmax(x,y,a,W):
     
     
     
     M      = y.shape[1]
     Cost   = -(np.sum(np.sum(  np.multiply(y,np.log(a)) , axis=0)/2))/M
-    gW     = -(np.dot(y-a,x.T))/M
+    
+    gW     = -(np.dot(y-a,x.T))/M  #cambios aca
+    
+    
     return gW, Cost
+    
 
 # Calculate Softmax
 def softmax(z):
     exp_z = np.exp(z-np.max(z))
-    return(exp_z/exp_z.sum(axis=0,keepdims=True))
+    return (exp_z/np.sum(exp_z,axis=0,keepdims=True))
 
-#Save weights and MSE  of the SNN
+
+# Save weights and MSE  of the SNN
 def save_w_dl(W,Ws,Cost):
     np.savez('wAEs.npz', W[0], W[1])
     np.savez('wSoftmax.npz', Ws)

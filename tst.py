@@ -31,13 +31,11 @@ def forward_dl(X, W):
     for i in range(len(W)):
         X = np.dot(W[i], X)
         if i == len(W)-1:
-            print(X.shape)
             X = ut.softmax(X)
-            print(X.shape)
         else:
             X = ut.act_function(X, act=2)  # Param AE??
-
-    return(X)
+            
+    return X
 
 # Measure
 
@@ -67,11 +65,12 @@ def confusion_matrix(y, z):
     m = y.shape[0]
     c = y.shape[1]
     
+   
+    
     y = np.argmax(y, axis=1)
+    
     z = np.argmax(z, axis=1)
-    
-    print(z)
-    
+   
     cm = np.zeros((c, c))
 
     for i in range(m):
@@ -96,7 +95,7 @@ def main():
     W = load_w_dl()
     zv = forward_dl(xv, W)
     cm, Fsc = metricas(yv, zv)
-    #print(Fsc*100)
+    print(Fsc*100)
     print('Fsc-mean {:.5f}'.format(Fsc.mean()*100))
 
 
