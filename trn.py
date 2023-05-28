@@ -87,7 +87,7 @@ def train_ae_batch(X, W, v, Param):
         gW, Cost = ut.gradW_ae(Act, W, Param)
         
         
-        W_1, v_1 = ut.updWV_RMSprop(W, v, gW, tasa = 0.0001)
+        W_1, v_1 = ut.updWV_RMSprop(W, v, gW, tasa = Param[4])
         #W[0] , v[0] = ut.updWV_RMSprop2(W[0], v[0], gW[0], tasa = 0.01)
         # W[0] , v[0] = W[0], v[0]
         # gW, Cost = ut.gradW(Act, W, Param)
@@ -111,7 +111,7 @@ def train_ae(X, ae_layers, Param):
     for Iter in range(1,Param[2]+1):
         #print('Iteracion: ', Iter)
         xe = X[:, np.random.permutation(X.shape[1])]  # sort random
-        xe= X
+        #xe= X
         
         
         W, v, c = train_ae_batch(xe, W, v, Param)
