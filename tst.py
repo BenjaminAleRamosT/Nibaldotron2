@@ -2,6 +2,15 @@ import pandas as pd
 import numpy as np
 import utility as ut
 
+def save_measure(cm,Fsc):
+    
+    df_cm = pd.DataFrame(cm)
+    df_cm.to_csv('cmatriz.csv', index=False, header = False)
+    
+    df_Fsc = pd.DataFrame(Fsc)
+    df_Fsc.to_csv('fscores.csv', index=False, header = False)
+    
+    return()
 
 # load data for testing
 def load_data_tst(ruta_tst='test.npz'):
@@ -97,7 +106,7 @@ def main():
     cm, Fsc = metricas(yv, zv)
     print(Fsc*100)
     print('Fsc-mean {:.5f}'.format(Fsc.mean()*100))
-
+    save_measure(cm,Fsc)
 
 if __name__ == '__main__':
     main()
