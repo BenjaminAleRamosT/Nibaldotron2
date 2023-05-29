@@ -1,7 +1,9 @@
 # Nibaldotron2
-Integrante
-Mister Pablo Acuña
-BenjaRamo
+Compartase con el que guste, tarea de codigo abierto
 
-El codigo esta funcionando pero, en el autoencoder se cambio la tasa de aprendizaje a 0.0001, con la tasa que da el profe por algun motivo no aprende. 
+Los miembros no se hacen responsable de los resultados de esta tarea, revise los resultados y la config.
+Usese bajo su propia discrecion como guia
+
+El codigo esta funcionando con los nuevos parametros que dio el profe en clases 
+
 Fscore promedio: 99.78
