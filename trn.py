@@ -121,7 +121,7 @@ def train_ae(X, ae_layers, Param):
             print('\tIterar-AE: ', Iter, ' Cost: ', Cost[Iter-1])
 
     
-    return W
+    return W, Cost
 
 # SAE's Training
 
@@ -130,13 +130,17 @@ def train_sae(X, Param):
 
     W = []
     NumAe = Param[5:]
+  
     for i,ae_layers in enumerate(NumAe):
         print('AutoEncoder: ',i+1,' Capas: ', ae_layers )
         
-        w1 = train_ae(X, ae_layers, Param)[0]
-        X = ut.act_function(np.dot(w1, X), act = Param[1])
-        W.append(w1)
-
+        w1, c = train_ae(X, ae_layers, Param)
+        X = ut.act_function(np.dot(w1[0], X), act = Param[1])
+        W.append(w1[0])
+        
+       
+        
+        
     return W, X
 
 # Load data to train the SNN
